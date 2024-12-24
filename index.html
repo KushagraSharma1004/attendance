@@ -11,7 +11,9 @@
   <h1>Welcome to Attendance Page</h1>
   <p id="status">Checking attendance...</p>
 
-  <script>
+  <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     // Firebase configuration
     const firebaseConfig = {
       apiKey: "AIzaSyD6kJZXxIQNbMcvPGYo_uY43g82Y9DImss",
@@ -24,8 +26,7 @@
     };
 
     // Import necessary functions from Firebase
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
