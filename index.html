@@ -14,18 +14,22 @@
   <script>
     // Firebase configuration
     const firebaseConfig = {
-  apiKey: "AIzaSyD6kJZXxIQNbMcvPGYo_uY43g82Y9DImss",
-  authDomain: "attendance-ae994.firebaseapp.com",
-  projectId: "attendance-ae994",
-  storageBucket: "attendance-ae994.firebasestorage.app",
-  messagingSenderId: "176367823866",
-  appId: "1:176367823866:web:92d356a9b66efc5323d243",
-  measurementId: "G-0J3QE5ELCD"
-};
+      apiKey: "AIzaSyD6kJZXxIQNbMcvPGYo_uY43g82Y9DImss",
+      authDomain: "attendance-ae994.firebaseapp.com",
+      projectId: "attendance-ae994",
+      storageBucket: "attendance-ae994.firebasestorage.app",
+      messagingSenderId: "176367823866",
+      appId: "1:176367823866:web:92d356a9b66efc5323d243",
+      measurementId: "G-0J3QE5ELCD"
+    };
+
+    // Import necessary functions from Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     // Initialize Firebase
-    const app = firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
     // Extract name from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -33,17 +37,20 @@
 
     if (name) {
       // Save the name to Firestore
-      db.collection('attendance').add({
-        name: name,
-        timestamp: new Date().toISOString()
-      })
-      .then(() => {
-        document.getElementById('status').textContent = `Attendance recorded for ${name}`;
-      })
-      .catch((error) => {
-        console.error('Error saving attendance:', error);
-        document.getElementById('status').textContent = 'Error recording attendance.';
-      });
+      async function saveAttendance() {
+        try {
+          const docRef = await addDoc(collection(db, "attendance"), {
+            name: name,
+            timestamp: new Date().toISOString()
+          });
+          document.getElementById('status').textContent = `Attendance recorded for ${name}`;
+        } catch (error) {
+          console.error('Error saving attendance:', error);
+          document.getElementById('status').textContent = 'Error recording attendance.';
+        }
+      }
+
+      saveAttendance();
     } else {
       document.getElementById('status').textContent = 'No name provided in the URL.';
     }
