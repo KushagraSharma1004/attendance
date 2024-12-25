@@ -35,6 +35,8 @@
     const name = urlParams.get('name');
     const userClass = urlParams.get('class');
     const userSection = urlParams.get('section');
+    const userRollNumber = urlParams.get('rollNumber');
+    const userPhoneNumber = urlParams.get('phoneNumber');
     const userDate = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
 
     if (name && userClass && userSection) {
@@ -91,7 +93,9 @@
               collection(db, `classes/${userClass}/sections/${userSection}/dates/${userDate}/attendance`),
               {
                 name: name,
-                timestamp: new Date().toISOString()
+                timestamp: new Date().toISOString(),
+                rollNumber: userRollNumber,
+                phoneNumber: userPhoneNumber
               }
             );
             document.getElementById('status').textContent = `Attendance recorded for ${name} on ${userDate}`;
