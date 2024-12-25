@@ -12,67 +12,103 @@
   <p id="status">Checking attendance...</p>
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-// Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyD6kJZXxIQNbMcvPGYo_uY43g82Y9DImss",
-  authDomain: "attendance-ae994.firebaseapp.com",
-  projectId: "attendance-ae994",
-  storageBucket: "attendance-ae994.firebasestorage.app",
-  messagingSenderId: "176367823866",
-  appId: "1:176367823866:web:92d356a9b66efc5323d243",
-  measurementId: "G-0J3QE5ELCD"
-};
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD6kJZXxIQNbMcvPGYo_uY43g82Y9DImss",
+      authDomain: "attendance-ae994.firebaseapp.com",
+      projectId: "attendance-ae994",
+      storageBucket: "attendance-ae994.firebasestorage.app",
+      messagingSenderId: "176367823866",
+      appId: "1:176367823866:web:92d356a9b66efc5323d243",
+      measurementId: "G-0J3QE5ELCD"
+    };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-// Extract name and other details from URL
-const urlParams = new URLSearchParams(window.location.search);
-const name = urlParams.get('name');
-const userClass = urlParams.get('class');
-const userSection = urlParams.get('section');
-const userDate = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+    // Extract name and other details from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name');
+    const userClass = urlParams.get('class');
+    const userSection = urlParams.get('section');
+    const userDate = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
 
-if (name && userClass && userSection) {
-  // Check if the name already exists for the given date
-  async function checkAndSaveAttendance() {
-    const attendanceQuery = query(
-      collection(db, `classes/${userClass}/sections/${userSection}/dates/${userDate}/attendance`),
-      where("name", "==", name)
-    );
-
-    const querySnapshot = await getDocs(attendanceQuery);
-
-    if (querySnapshot.empty) {
-      // If the name doesn't exist, add the attendance
-      try {
-        const attendanceRef = await addDoc(
-          collection(db, `classes/${userClass}/sections/${userSection}/dates/${userDate}/attendance`),
-          {
-            name: name,
-            timestamp: new Date().toISOString()
-          }
-        );
-        document.getElementById('status').textContent = `Attendance recorded for ${name} on ${userDate}`;
-      } catch (error) {
-        console.error('Error saving attendance:', error);
-        document.getElementById('status').textContent = 'Error recording attendance.';
+    if (name && userClass && userSection) {
+      // Ensure `classes/{userClass}` document exists
+      async function ensureClassDocument() {
+        const classDocRef = doc(db, `classes`, userClass);
+        try {
+          await setDoc(classDocRef, { class: userClass }, { merge: true });
+          console.log(`Class document for "${userClass}" ensured.`);
+        } catch (error) {
+          console.error("Error ensuring class document:", error);
+        }
       }
+
+      // Ensure `sections/{userSection}` document exists under the class
+      async function ensureSectionDocument() {
+        const sectionDocRef = doc(db, `classes/${userClass}/sections`, userSection);
+        try {
+          await setDoc(sectionDocRef, { section: userSection }, { merge: true });
+          console.log(`Section document for "${userSection}" ensured.`);
+        } catch (error) {
+          console.error("Error ensuring section document:", error);
+        }
+      }
+
+      // Ensure `dates/{userDate}` document exists under the section
+      async function ensureDateDocument() {
+        const dateDocRef = doc(db, `classes/${userClass}/sections/${userSection}/dates`, userDate);
+        try {
+          await setDoc(dateDocRef, { date: userDate }, { merge: true });
+          console.log(`Date document for "${userDate}" ensured.`);
+        } catch (error) {
+          console.error("Error ensuring date document:", error);
+        }
+      }
+
+      // Check and save attendance
+      async function checkAndSaveAttendance() {
+        await ensureClassDocument(); // Ensure the class document exists
+        await ensureSectionDocument(); // Ensure the section document exists
+        await ensureDateDocument(); // Ensure the date document exists
+
+        const attendanceQuery = query(
+          collection(db, `classes/${userClass}/sections/${userSection}/dates/${userDate}/attendance`),
+          where("name", "==", name)
+        );
+
+        const querySnapshot = await getDocs(attendanceQuery);
+
+        if (querySnapshot.empty) {
+          // If the name doesn't exist, add the attendance
+          try {
+            const attendanceRef = await addDoc(
+              collection(db, `classes/${userClass}/sections/${userSection}/dates/${userDate}/attendance`),
+              {
+                name: name,
+                timestamp: new Date().toISOString()
+              }
+            );
+            document.getElementById('status').textContent = `Attendance recorded for ${name} on ${userDate}`;
+          } catch (error) {
+            console.error('Error saving attendance:', error);
+            document.getElementById('status').textContent = 'Error recording attendance.';
+          }
+        } else {
+          // If the name already exists, prevent adding it again
+          document.getElementById('status').textContent = `Attendance for ${name} has already been recorded today.`;
+        }
+      }
+
+      checkAndSaveAttendance();
     } else {
-      // If the name already exists, prevent adding it again
-      document.getElementById('status').textContent = `Attendance for ${name} has already been recorded today.`;
+      document.getElementById('status').textContent = 'Missing required information in the URL.';
     }
-  }
-
-  checkAndSaveAttendance();
-} else {
-  document.getElementById('status').textContent = 'Missing required information in the URL.';
-}
-
   </script>
 </body>
 </html>
