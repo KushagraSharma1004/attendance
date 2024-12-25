@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Attendance</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    select, button {
+      margin: 10px 0;
+      padding: 8px;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Attendance Admin Panel</h1>
+  
+  <div>
+    <label for="classSelect">Select Class:</label>
+    <select id="classSelect">
+      <option value="">Select Class</option>
+    </select>
+  </div>
+  <div>
+    <label for="sectionSelect">Select Section:</label>
+    <select id="sectionSelect" disabled>
+      <option value="">Select Section</option>
+    </select>
+  </div>
+  <div>
+    <label for="dateSelect">Select Date:</label>
+    <select id="dateSelect" disabled>
+      <option value="">Select Date</option>
+    </select>
+  </div>
+  <button id="loadAttendanceBtn" disabled>Load Attendance</button>
+
+  <table id="attendanceTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Attendance records will be inserted here -->
+    </tbody>
+  </table>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    // Firebase configuration
+    const firebaseConfig = {
+  apiKey: "AIzaSyD6kJZXxIQNbMcvPGYo_uY43g82Y9DImss",
+  authDomain: "attendance-ae994.firebaseapp.com",
+  projectId: "attendance-ae994",
+  storageBucket: "attendance-ae994.firebasestorage.app",
+  messagingSenderId: "176367823866",
+  appId: "1:176367823866:web:92d356a9b66efc5323d243",
+  measurementId: "G-0J3QE5ELCD"
+};
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Select elements
+    const classSelect = document.getElementById('classSelect');
+    const sectionSelect = document.getElementById('sectionSelect');
+    const dateSelect = document.getElementById('dateSelect');
+    const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
+    const attendanceTableBody = document.getElementById('attendanceTable').getElementsByTagName('tbody')[0];
+
+    // Load classes from Firestore
+async function loadClasses() {
+  try {
+    const classesRef = await collection(db, 'classes');
+    const classesSnapshot = await getDocs(classesRef);
+    if (classesSnapshot.empty) {
+      console.log("No classes found");
+    } else {
+      classesSnapshot.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = doc.id;
+        classSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error("Error loading classes: ", error);
+  }
+}
+
+
+    // Load sections when a class is selected
+    async function loadSections() {
+      const classId = classSelect.value;
+      if (!classId) return;
+      sectionSelect.innerHTML = '<option value="">Select Section</option>'; // Clear sections
+      const sectionsRef = collection(db, `classes/${classId}/sections`);
+      const sectionsSnapshot = await getDocs(sectionsRef);
+      sectionsSnapshot.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = doc.id;
+        sectionSelect.appendChild(option);
+      });
+      sectionSelect.disabled = false;
+    }
+
+    // Load dates when a section is selected
+    async function loadDates() {
+      const classId = classSelect.value;
+      const sectionId = sectionSelect.value;
+      if (!classId || !sectionId) return;
+      dateSelect.innerHTML = '<option value="">Select Date</option>'; // Clear dates
+      const datesRef = collection(db, `classes/${classId}/sections/${sectionId}/dates`);
+      const datesSnapshot = await getDocs(datesRef);
+      datesSnapshot.forEach(doc => {
+        const option = document.createElement('option');
+        option.value = doc.id;
+        option.textContent = doc.id; // Date in YYYY-MM-DD format
+        dateSelect.appendChild(option);
+      });
+      dateSelect.disabled = false;
+    }
+
+    // Load attendance data for the selected date
+    // Load attendance data for the selected date
+async function loadAttendance() {
+  const classId = classSelect.value;
+  const sectionId = sectionSelect.value;
+  const date = dateSelect.value;
+
+  if (!classId || !sectionId || !date) return;
+
+  // Clear the table
+  attendanceTableBody.innerHTML = '';
+
+  // Fetch attendance records
+  const attendanceRef = collection(db, `classes/${classId}/sections/${sectionId}/dates/${date}/attendance`);
+  const attendanceSnapshot = await getDocs(attendanceRef);
+
+  attendanceSnapshot.forEach(doc => {
+    const data = doc.data();
+    const row = attendanceTableBody.insertRow();
+    const nameCell = row.insertCell(0);
+    const timestampCell = row.insertCell(1);
+
+    // Format the timestamp to a human-readable format
+    const readableTimestamp = new Date(data.timestamp).toLocaleString();
+
+    nameCell.textContent = data.name;
+    timestampCell.textContent = readableTimestamp;
+  });
+}
+
+
+    // Event Listeners
+    classSelect.addEventListener('change', () => {
+      loadSections();
+    });
+
+    sectionSelect.addEventListener('change', () => {
+      loadDates();
+    });
+
+    dateSelect.addEventListener('change', () => {
+      loadAttendanceBtn.disabled = false;
+    });
+
+    loadAttendanceBtn.addEventListener('click', () => {
+      loadAttendance();
+    });
+
+    // Load classes when the page is loaded
+    window.addEventListener("load", (event) => {
+    loadClasses();
+})
+  </script>
+</body>
+</html>

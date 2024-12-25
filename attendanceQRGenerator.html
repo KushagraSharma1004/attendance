@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generate QR Code</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+</head>
+<body>
+  <h1>QR Code Generator</h1>
+  <input type="text" id="userName" placeholder="Enter your Name">
+  <input type="number" id="userClass" placeholder="Enter your Class">
+  <input type="text" id="userSection" placeholder="Enter your Section">
+  <input type="text" id="userRollnumber" placeholder="Enter your Roll no.">
+  <input type="number" id="userPhoneNumber" placeholder="Enter your Phone number">
+  <button id="generateBtn">Generate QR Code</button>
+  <canvas id="qrCanvas"></canvas>
+
+  <script>
+    const generateBtn = document.getElementById('generateBtn');
+    const qrCanvas = document.getElementById('qrCanvas');
+
+    generateBtn.addEventListener('click', () => {
+      const userName = document.getElementById('userName').value.trim();
+      const userClass = document.getElementById('userClass').value.trim();
+      const userSection = document.getElementById('userSection').value.trim();
+      const userRollnumber = document.getElementById('userRollnumber').value.trim();
+      const userPhoneNumber = document.getElementById('userPhoneNumber').value.trim();
+      if (!userName || !userClass || !userSection || !userRollnumber || !userPhoneNumber || userPhoneNumber.length < 10 || userPhoneNumber.length > 10 ) {
+        alert('Please fill the fields correctly');
+        return;
+      }
+
+      const url = `https://kushagrasharma1004.github.io/attendance/?name=${encodeURIComponent(userName)}&class=${encodeURIComponent(userClass)}&section=${encodeURIComponent(userSection)}&rollNumber=${encodeURIComponent(userRollnumber)}&phoneNumber=${encodeURIComponent(userPhoneNumber)}`;
+
+      // Clear existing QR code
+      const context = qrCanvas.getContext('2d');
+      context.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+
+      // Generate QR code
+      QRCode.toCanvas(qrCanvas, url, function (error) {
+        if (error) {
+          console.error('Error generating QR Code:', error);
+        } else {
+          console.log('QR Code generated successfully!');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
